@@ -33,7 +33,6 @@ def calculate_feature_similarity(query_image, candidate_images):
     for candidate_image in candidate_images:
         image_data = candidate_image['data']
         candidate_features = extract_features(image_data)
-        print(query_features)
         # Calculate Euclidean distance as a similarity measure
         similarity_score = np.linalg.norm(query_features - candidate_features)
 
