@@ -70,5 +70,11 @@ if __name__ == "__main__":
             text_out += closest_match['emoji'].split("_")[1].split(".")[0]
         text_out += "\n"
 
-    with open(matching_filename + ".txt", 'w') as f:
-        f.write(text_out)
+    with open(matching_filename + ".html", 'w') as html_file:
+        html_file.write("<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n</head>\n<body>\n")
+        html_file.write("<div style='font-size: 24px;'>\n")
+        for line in text_out.split("\n"):
+            padded_line = line.rstrip().ljust(32, ' ')  # Use a regular space for padding
+            html_file.write(padded_line + "<br>")
+        html_file.write("</div>\n")
+        html_file.write("</body>\n</html>")
