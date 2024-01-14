@@ -2,7 +2,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 # Load the TFRecord dataset
-tfrecord_path = "./tf_dataset.tfrecord"
+tfrecord_path = "./breakhisRaw.tfrecord"
 
 def _parse_function(proto):
     keys_to_features = {

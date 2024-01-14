@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
 # Load the TFRecord dataset
-tfrecord_path = "./tf_dataset.tfrecord"
+tfrecord_path = "./breakhisEmoxelfied.tfrecord"
 
 def _parse_function(proto):
     keys_to_features = {

@@ -1,0 +1,1 @@
+Figures for the emoji dense layer set.

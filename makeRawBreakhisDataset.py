@@ -20,15 +20,16 @@ def create_dataset(dataset_path):
 
         if os.path.isdir(label_path):
             for filename in os.listdir(label_path):
-                if filename.endswith("converted.png"):
-                    image_path = os.path.join(label_path, filename)
+                if filename.endswith(".png"):
+                    if not filename.endswith("converted.png"):
+                        image_path = os.path.join(label_path, filename)
 
-                    # Preprocess image
-                    preprocessed_image = preprocess_image(image_path)
+                        # Preprocess image
+                        preprocessed_image = preprocess_image(image_path)
 
-                    # Add image and label to the dataset
-                    images.append(preprocessed_image)
-                    labels.append(label)
+                        # Add image and label to the dataset
+                        images.append(preprocessed_image)
+                        labels.append(label)
 
     return np.array(images), np.array(labels)
 
@@ -48,11 +49,10 @@ def main():
     tf_dataset = tf.data.Dataset.from_tensor_slices((images, labels_one_hot))
 
     # Shuffle and batch the dataset
-    tf_dataset = tf_dataset.shuffle(buffer_size=len(images)).batch(batch_size=32)
-
+    tf_dataset = tf_dataset.shuffle(buffer_size=len(images)).batch(batch_size=1)
 
     # Save the dataset as TFRecord (optional)
-    tf_record_path = "./breakhisEmoxelfied.tfrecord"
+    tf_record_path = "./breakhisRaw.tfrecord"
 
     def _bytes_feature(value):
         """Returns a bytes_list from a string / byte."""

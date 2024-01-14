@@ -40,6 +40,13 @@ def calculate_feature_similarity(query_image, candidate_images):
 
     return similarities
 
+def toUnicode(chunk):
+    candidates_directory = "./emoji_png/"
+    candidate_images = [{'emoji': file, 'data': cv2.imread(os.path.join(candidates_directory, file), cv2.IMREAD_GRAYSCALE)} for file in os.listdir(candidates_directory) if file.endswith(".png")]
+    chunk_similarity = calculate_feature_similarity(chunk, candidate_images)
+    closest_match = min(chunk_similarity, key=lambda x: x['score'])
+    print(closest_match)
+    return closest_match['emoji'].split("_")[1].split(".png")[0]
 
 if __name__ == "__main__":
     candidates_directory = "./emoji_png/"
