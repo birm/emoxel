@@ -48,9 +48,9 @@ def showMe(image, title="Image"):
     plt.axis('off')
     plt.show()
 
-class SpecialMeowLayer(nn.Module):
+class EmoxelLayer(nn.Module):
     def forward(self, x):
-        return specialMeow(x)
+        return emoxelify(x)
 
 
 def unicode_to_float(unicode_string):
@@ -65,7 +65,7 @@ def unicode_to_float(unicode_string):
 
     return float(float_value)  # Explicitly cast to float
 
-def specialMeow(x):
+def emoxelify(x):
     # Assuming x has shape (batch_size, channels, height, width)
     normalized_tensor = torch.nn.functional.normalize(x, p=2, dim=(2, 3))
     
@@ -88,7 +88,7 @@ def specialMeow(x):
     # Apply thresholding to enhance edges/features for each pixel
     for i in range(3):  # Loop over RGB channels
         channel_values = numpy_array[:, :, i]
-        numpy_array[ (channel_values > 240)] = [255, 255, 255]  # Set entire pixel to black or white
+        numpy_array[ (channel_values > 200)] = [255, 255, 255]  # Set entire pixel to black or white
 
     # Ensure values are in [0, 255]
     numpy_array = np.clip(numpy_array, 0, 255).astype(np.uint8)
@@ -127,8 +127,8 @@ class CustomModel(nn.Module):
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
 
-        # SpecialMeowLayer
-        self.special_meow = SpecialMeowLayer()
+        # EmoxelLayer
+        self.emoxel = EmoxelLayer()
 
         # Layers for handling scalar input
         self.scalar_fc = nn.Linear(1, 256)  # Assuming input is a scalar tensor
@@ -143,8 +143,8 @@ class CustomModel(nn.Module):
         x = torch.relu(self.conv3(x))
         x = self.pool(x)
 
-        # SpecialMeowLayer
-        x = torch.as_tensor(self.special_meow(x))
+        # EmoxelLayer
+        x = torch.as_tensor(self.emoxel(x))
 
         # Handling scalar input
         x = torch.relu(self.scalar_fc(x.view(-1, 1)))  # Reshape to handle scalar input
@@ -163,13 +163,19 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(custom_model.parameters(), lr=0.001)
 
 # tl
-train_losses = []
-val_losses = []
-
 # Training loop
 num_epochs = 20
+
+# Initialize accuracy lists
+train_accuracies = []
+val_accuracies = []
+
 for epoch in range(num_epochs):
     custom_model.train()
+    correct_train = 0
+    total_train = 0
+    train_loss = 0.0
+
     for inputs, labels in train_loader:
         optimizer.zero_grad()
         outputs = custom_model(inputs)
@@ -183,33 +189,56 @@ for epoch in range(num_epochs):
         if labels.dim() == 1:
             labels = labels.unsqueeze(1)
 
-        loss = criterion(outputs, labels)
+        _, predicted = torch.max(outputs.data, 1)
+        total_train += labels.size(0)
+        correct_train += (predicted == labels.argmax(dim=1)).sum().item()
+        print(predicted, labels, labels.argmax(dim=1))
+
+        loss = criterion(outputs, labels.argmax(dim=1))  # Use argmax to get class indices
         loss.backward()
         optimizer.step()
+        train_loss += loss.item()
 
-    # Log training loss
-    train_losses.append(loss.item())
+    # Compute training accuracy and loss
+    train_accuracy = correct_train / total_train
+    avg_train_loss = train_loss / len(train_loader)
+
+    # Log training accuracy and loss
+    train_accuracies.append(train_accuracy)
 
     # Evaluation
     custom_model.eval()
+    correct_val = 0
+    total_val = 0
+    val_loss = 0.0
+
     with torch.no_grad():
-        val_loss = 0.0
         for inputs, labels in val_loader:
             outputs = custom_model(inputs)
-            val_loss += criterion(outputs, labels).item()
 
-        # Log validation loss
-        val_loss /= len(val_loader)
-        val_losses.append(val_loss)
+            _, predicted = torch.max(outputs.data, 1)
+            total_val += labels.size(0)
+            correct_val += (predicted == labels.argmax(dim=1)).sum().item()
 
-# Plot the training and validation losses
-plt.plot(range(1, num_epochs + 1), train_losses, label='Training Loss')
-plt.plot(range(1, num_epochs + 1), val_losses, label='Validation Loss')
+            val_loss += criterion(outputs, labels.argmax(dim=1))
+
+    # Compute validation accuracy and loss
+    val_accuracy = correct_val / total_val
+    avg_val_loss = val_loss / len(val_loader)
+
+    # Log validation accuracy and loss
+    val_accuracies.append(val_accuracy)
+
+    # Print training and validation metrics
+    print(f'Epoch {epoch + 1}/{num_epochs}: '
+          f'Training Loss: {avg_train_loss:.4f}, Training Accuracy: {train_accuracy:.4f} | '
+          f'Validation Loss: {avg_val_loss:.4f}, Validation Accuracy: {val_accuracy:.4f}')
+
+# Plot the training and validation accuracies
+plt.plot(range(1, num_epochs + 1), train_accuracies, label='Training Accuracy')
+plt.plot(range(1, num_epochs + 1), val_accuracies, label='Validation Accuracy')
 plt.xlabel('Epoch')
-plt.ylabel('Loss')
+plt.ylabel('Accuracy')
+plt.ylim(0, 1)  # Ensure y-axis is within [0, 1]
 plt.legend()
 plt.show()
-
-torchinfo_summary(custom_model, input_size=(1, 3, 256, 256))  # Adjust input_size as needed
-print("done")
-
