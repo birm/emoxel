@@ -35,6 +35,18 @@ labels = np.array(labels)
 
 X_train, X_val, y_train, y_val = train_test_split(images, labels, test_size=0.2, random_state=42069)
 
+def showMe(image, title="Image"):
+    """
+    Display the image using Matplotlib.
+
+    Parameters:
+    - image: NumPy array representing the image.
+    - title: Title of the displayed image (default is "Image").
+    """
+    plt.imshow(image)
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
 
 class SpecialMeowLayer(nn.Module):
     def forward(self, x):
@@ -62,9 +74,31 @@ def specialMeow(x):
     
     # Ensure the last dimension is 1
     numpy_array = numpy_array[0,:,:,0:3]
-    numpy_array = ((numpy_array - np.min(numpy_array)) / (np.max(numpy_array) - np.min(numpy_array)) * 128 )+ 128
+    # Adjust contrast of the image with center at 128
+ 
+    # Calculate the first and fourth quartiles
+    first_quartile = np.percentile(numpy_array, 45)
+    fourth_quartile = np.percentile(numpy_array, 55)
+
+    # Adjust contrast of the image
+    contrast_factor = 255 / (fourth_quartile - first_quartile)
+
+    numpy_array = (numpy_array - first_quartile) * contrast_factor
+
+    # Apply thresholding to enhance edges/features for each pixel
+    for i in range(3):  # Loop over RGB channels
+        channel_values = numpy_array[:, :, i]
+        numpy_array[ (channel_values > 240)] = [255, 255, 255]  # Set entire pixel to black or white
+
+    # Ensure values are in [0, 255]
+    numpy_array = np.clip(numpy_array, 0, 255).astype(np.uint8)
+
+
+
     numpy_array = numpy_array.astype(np.uint8)
     # need something to make numpy_array like an image for the cv functions within toUnicode
+    
+    #showMe(numpy_array)
     unicode_strings = EmoxelConvert.toUnicode(numpy_array)
     float_value = unicode_to_float(unicode_strings)
     return float_value
