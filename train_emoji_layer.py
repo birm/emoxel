@@ -11,6 +11,24 @@ import struct
 import matplotlib.pyplot as plt
 from torchinfo import summary as torchinfo_summary
 
+# emoji sentiment
+import json
+from transformers import pipeline 
+
+# load the emojiSenseMap
+
+def emojiSense(map, emoji):
+    emojiSenseMap = json.load(map) # emojiSenseMap.json file pointer
+    senses_text = emojiSenseMap.get(emoji, False)
+    if not senses_text:
+        return 0.0
+    sentiment_analysis_pipeline = pipeline("sentiment-analysis")
+    sentiment_result = sentiment_analysis_pipeline(senses_text)[0]
+    if sentiment_result['label'] == "NEGATIVE":
+        return -1 * sentiment_result['score']
+    else:
+        return sentiment_result['score']
+
 # Assuming you have your data loaded in PyTorch tensors X_train_tensor, y_train_tensor, X_val_tensor, y_val_tensor
 # Load the TFRecord dataset
 tfrecord_path = "./breakhisRaw.tfrecord"
@@ -77,18 +95,12 @@ def emoxelify(x):
     # Adjust contrast of the image with center at 128
  
     # Calculate the first and fourth quartiles
-    first_quartile = np.percentile(numpy_array, 45)
-    fourth_quartile = np.percentile(numpy_array, 55)
-
-    # Adjust contrast of the image
-    contrast_factor = 255 / (fourth_quartile - first_quartile)
-
-    numpy_array = (numpy_array - first_quartile) * contrast_factor
+    threshold = np.percentile(numpy_array, 50)
 
     # Apply thresholding to enhance edges/features for each pixel
     for i in range(3):  # Loop over RGB channels
         channel_values = numpy_array[:, :, i]
-        numpy_array[ (channel_values > 200)] = [255, 255, 255]  # Set entire pixel to black or white
+        numpy_array[ (channel_values > threshold)] = [255, 255, 255]  # Set entire pixel to black or white
 
     # Ensure values are in [0, 255]
     numpy_array = np.clip(numpy_array, 0, 255).astype(np.uint8)
@@ -100,8 +112,10 @@ def emoxelify(x):
     
     #showMe(numpy_array)
     unicode_strings = EmoxelConvert.toUnicode(numpy_array)
-    float_value = unicode_to_float(unicode_strings)
-    return float_value
+    with open('./emoji_sense/emojiSenseMap.json', 'r') as f:
+        #print(unicode_strings)
+        float_value = emojiSense(f, unicode_strings)
+        return float_value
 
 
 # Convert NumPy arrays to PyTorch tensors
