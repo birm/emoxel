@@ -95,12 +95,14 @@ def emoxelify(x):
     # Adjust contrast of the image with center at 128
  
     # Calculate the first and fourth quartiles
-    threshold = np.percentile(numpy_array, 50)
+    threshold = np.percentile(numpy_array, 70)
 
     # Apply thresholding to enhance edges/features for each pixel
     for i in range(3):  # Loop over RGB channels
         channel_values = numpy_array[:, :, i]
         numpy_array[ (channel_values > threshold)] = [255, 255, 255]  # Set entire pixel to black or white
+        numpy_array[ (channel_values < threshold)] = [0, 0, 0]
+
 
     # Ensure values are in [0, 255]
     numpy_array = np.clip(numpy_array, 0, 255).astype(np.uint8)
@@ -110,7 +112,7 @@ def emoxelify(x):
     numpy_array = numpy_array.astype(np.uint8)
     # need something to make numpy_array like an image for the cv functions within toUnicode
     
-    #showMe(numpy_array)
+    showMe(numpy_array)
     unicode_strings = EmoxelConvert.toUnicode(numpy_array)
     with open('./emoji_sense/emojiSenseMap.json', 'r') as f:
         #print(unicode_strings)
@@ -159,6 +161,7 @@ class CustomModel(nn.Module):
 
         # EmoxelLayer
         x = torch.as_tensor(self.emoxel(x))
+        print(x)
 
         # Handling scalar input
         x = torch.relu(self.scalar_fc(x.view(-1, 1)))  # Reshape to handle scalar input
